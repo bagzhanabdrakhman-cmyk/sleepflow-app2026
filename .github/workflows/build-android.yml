@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,14 +47,10 @@ jobs:
     - name: Downgrade Gradle plugin
       run: sed -i "s/gradle:8.*/gradle:7.4.2'/g" android/build.gradle
     
-    - name: Create keystore properties
+    - name: Create keystore
       run: |
         cd android
         keytool -genkey -v -keystore sleepflow-upload.keystore -alias sleepflow-upload -keyalg RSA -keysize 2048 -validity 10000 -storepass "SleepFlow@Upload2026" -keypass "SleepFlow@Upload2026" -dname "CN=SleepFlow Upload, OU=Development, O=SleepFlow, L=Global, ST=Online, C=US"
-    
-    - name: Create keystore config
-      run: |
-        cd android
         echo "storeFile=sleepflow-upload.keystore" > keystore.properties
         echo "storePassword=SleepFlow@Upload2026" >> keystore.properties
         echo "keyAlias=sleepflow-upload" >> keystore.properties
