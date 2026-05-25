@@ -1,0 +1,100 @@
+name: Build Signed APK and AAB
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm install -g pnpm && pnpm install
+
+      - name: Install Capacitor CLI
+        run: pnpm add -D @capacitor/cli @capacitor/core @capacitor/android
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/sleepflow-release.keystore
+
+      - name: Create keystore.properties
+        run: |
+          cat > android/app/keystore.properties << EOF
+          storeFile=sleepflow-release.keystore
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+
+      - name: Create local.properties
+        run: |
+          cat > android/local.properties << EOF
+          sdk.dir=$ANDROID_SDK_ROOT
+          EOF
+
+      - name: Add gradle properties
+        run: |
+          cat >> android/gradle.properties << EOF
+          android.suppressUnsupportedCompileSdk=36
+          android.ignoreAarMetadataVersionCheck=true
+          EOF
+
+      - name: Build signed APK
+        run: |
+          cd android
+          ./gradlew assembleRelease -x checkReleaseAarMetadata
+
+      - name: Build signed AAB
+        run: |
+          cd android
+          ./gradlew bundleRelease -x checkReleaseAarMetadata
+
+      - name: Create source ZIP
+        run: |
+          zip -r sleepflow-source.zip . \
+            -x "*/node_modules/*" \
+            "*/.gradle/*" \
+            "*/build/*" \
+            "*/.git/*" \
+            "*/android/app/sleepflow-release.keystore" \
+            "*/.github/workflows/*"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sleepflow-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: sleepflow-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Upload Source ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: sleepflow-source
+          path: sleepflow-source.zip
