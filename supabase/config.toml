@@ -1,0 +1,4 @@
+project_id = "ubrbvkaspsphdxpsvazq"
+
+[functions.translate-locale]
+verify_jwt = false
