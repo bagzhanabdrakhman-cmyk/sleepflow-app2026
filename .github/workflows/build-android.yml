@@ -30,8 +30,7 @@ jobs:
       run: pnpm install --no-frozen-lockfile
     
     - name: Update package name to com.sleepflow
-      run: |
-        sed -i 's/"app.lovable.sleepflow"/"com.sleepflow"/g' capacitor.config.ts
+      run: sed -i 's/"app.lovable.sleepflow"/"com.sleepflow"/g' capacitor.config.ts
     
     - name: Add Android platform
       run: pnpm exec cap add android
@@ -43,8 +42,7 @@ jobs:
       run: find node_modules/@capacitor -name "build.gradle" -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_11/g' {} \;
     
     - name: Downgrade Android Gradle plugin
-      run: |
-        sed -i "s/classpath 'com.android.tools.build:gradle:.*'/classpath 'com.android.tools.build:gradle:7.4.2'/g" android/build.gradle
+      run: sed -i "s/classpath 'com.android.tools.build:gradle:.*'/classpath 'com.android.tools.build:gradle:7.4.2'/g" android/build.gradle
     
     - name: Generate signing keystore
       run: |
@@ -58,8 +56,7 @@ keyPassword=SleepFlow@Upload2026
 KEYSTORE
     
     - name: Update app build.gradle with package name
-      run: |
-        sed -i 's/"app.lovable.sleepflow"/"com.sleepflow"/g' android/app/build.gradle
+      run: sed -i 's/"app.lovable.sleepflow"/"com.sleepflow"/g' android/app/build.gradle
     
     - name: Build Release APK
       run: |
@@ -82,41 +79,3 @@ KEYSTORE
       with:
         name: sleepflow-aab
         path: android/app/build/outputs/bundle/release/app-release.aab
-    
-    - name: Create Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v1.0.0-${{ github.run_number }}
-        release_name: SleepFlow Release v1.0.0
-        body: |
-          Automated build of SleepFlow Android app
-          
-          **Files:**
-          - app-release.apk - Direct installation APK
-          - app-release.aab - Google Play Store bundle
-          
-          Package: com.sleepflow
-        draft: false
-        prerelease: false
-    
-    - name: Upload APK to Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: android/app/build/outputs/apk/release/app-release.apk
-        asset_name: sleepflow-app-release.apk
-        asset_content_type: application/vnd.android.package-archive
-    
-    - name: Upload AAB to Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: android/app/build/outputs/bundle/release/app-release.aab
-        asset_name: sleepflow-app-release.aab
-        asset_content_type: application/octet-stream
