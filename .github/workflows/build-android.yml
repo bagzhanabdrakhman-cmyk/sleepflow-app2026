@@ -5,26 +5,19 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: node:22-bullseye
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-    
-    - name: Set up Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '11'
+    - name: Install Java
+      run: |
+        apt-get update
+        apt-get install -y openjdk-11-jdk
     
     - name: Install pnpm
       run: npm install -g pnpm
