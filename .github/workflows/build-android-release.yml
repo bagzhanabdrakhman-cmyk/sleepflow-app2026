@@ -5,52 +5,63 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
+      
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      
       - run: npm install -g pnpm && pnpm install
+      
       - run: pnpm add -D @capacitor/cli @capacitor/core @capacitor/android
+      
       - run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/sleepflow-release.keystore
+      
       - run: |
-          cat > android/app/keystore.properties << EOF
+          mkdir -p android/app
+          cat > android/app/keystore.properties << 'PROPS'
           storeFile=sleepflow-release.keystore
           storePassword=${{ secrets.KEYSTORE_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
-          EOF
+          PROPS
+      
       - run: |
-          cat > android/local.properties << EOF
+          cat > android/local.properties << 'PROPS'
           sdk.dir=$ANDROID_SDK_ROOT
-          EOF
+          PROPS
+      
       - run: |
-          cat >> android/gradle.properties << EOF
+          cat >> android/gradle.properties << 'PROPS'
           android.suppressUnsupportedCompileSdk=36
           android.ignoreAarMetadataVersionCheck=true
-          EOF
+          PROPS
+      
       - run: cd android && ./gradlew assembleRelease -x checkReleaseAarMetadata
+      
       - run: cd android && ./gradlew bundleRelease -x checkReleaseAarMetadata
+      
       - run: zip -r sleepflow-source.zip . -x "*/node_modules/*" "*/.gradle/*" "*/build/*" "*/.git/*" "*/android/app/sleepflow-release.keystore"
+      
       - uses: actions/upload-artifact@v4
         with:
           name: sleepflow-apk
           path: android/app/build/outputs/apk/release/app-release.apk
+      
       - uses: actions/upload-artifact@v4
         with:
           name: sleepflow-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
+      
       - uses: actions/upload-artifact@v4
         with:
           name: sleepflow-source
